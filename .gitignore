@@ -1,3 +1,5 @@
 *.credentials
 b2-credentials
 credentials
+accent.css.live
+config-live.jsonc
