@@ -64,10 +64,10 @@ say "Parsing packages.txt"
 parse_section() {
   local section="$1"
   awk -v sect="[$section]" '
-      $0 == sect            { in_section = 1; next }
-      /^\[/                 { in_section = 0 }
-      in_section && /^[^#[:space:]]/ { print $1 }}
-  ' "$REPO_DIR/packages.txt"
+        $0 == sect            { in_section = 1; next }
+        /^\[/                 { in_section = 0 }
+        in_section && /^[^#[:space:]]/ { print $1 }
+    ' "$REPO_DIR/packages.txt"
 }
 
 PACMAN_PKGS=$(parse_section pacman)
