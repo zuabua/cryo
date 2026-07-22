@@ -1,0 +1,210 @@
+@define-color base    #303446;
+@define-color surface #292c3c;
+@define-color overlay #414559;
+@define-color teal    #5eead4;
+@define-color indigo  #818cf8;
+@define-color text    #c6d0f5;
+@define-color subtext #a5adce;
+@define-color red     #f87171;
+@import url("accent.css.live");
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "JetBrainsMono Nerd Font Mono",
+                 "Symbols Nerd Font Mono", monospace;
+    font-size: 13px;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    transition: background-color 180ms ease,
+                color            180ms ease,
+                box-shadow       180ms ease,
+                border-color     180ms ease;
+}
+
+window#waybar {
+    background-color: rgba(41, 44, 60, 0.72);
+    color: @text;
+    border-radius: 0;
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+window#waybar.hidden { opacity: 0; }
+
+#workspaces {
+    padding: 0 6px;
+    margin: 4px 6px;
+    background-color: rgba(65, 69, 89, 0.55);
+    border-radius: 10px;
+}
+#workspaces button {
+    padding: 0 8px;
+    margin: 3px 1px;
+    min-width: 18px;
+    color: @subtext;
+    background-color: transparent;
+    border-radius: 8px;
+    font-size: 11px;
+}
+#workspaces button:hover {
+    color: @text;
+    background-color: rgba(94, 234, 212, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.30);
+}
+#workspaces button.active {
+    color: @base;
+    background-color: @teal;
+    box-shadow: 0 0 12px rgba(94, 234, 212, 0.50);
+    padding: 0 14px;
+}
+#workspaces button.urgent {
+    color: @base;
+    background-color: @red;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.55);
+}
+
+#clock {
+    color: @text;
+    padding: 0 18px;
+    margin: 4px 0;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+#clock:hover { color: @teal; }
+
+#pulseaudio,
+#bluetooth,
+#network,
+#battery,
+#cpu,
+#memory,
+#tray,
+#idle_inhibitor,
+#custom-b2,
+#custom-htb,
+#custom-pomodoro,
+#custom-gamemode {
+    padding: 0 12px;
+    margin: 4px 2px;
+    color: @text;
+    background-color: rgba(65, 69, 89, 0.55);
+    border-radius: 10px;
+}
+#pulseaudio:hover,
+#bluetooth:hover,
+#network:hover,
+#battery:hover,
+#cpu:hover,
+#memory:hover,
+#idle_inhibitor:hover,
+#custom-b2:hover,
+#custom-htb:hover,
+#custom-pomodoro:hover,
+#custom-gamemode:hover {
+    background-color: rgba(94, 234, 212, 0.18);
+    color: @teal;
+    box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.35);
+}
+
+#custom-b2,
+#idle_inhibitor,
+#custom-gamemode {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 10px;
+    padding-right: 18px;
+}
+
+#idle_inhibitor {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#custom-b2  { color: @teal; font-size: 14px; }
+#cpu        { color: @teal; }
+#memory     { color: @indigo; }
+
+#pulseaudio.muted     { color: @subtext; }
+#network.disconnected { color: @red; }
+
+#bluetooth                { color: @subtext; }
+#bluetooth.connected      { color: @indigo; }
+#bluetooth.discoverable,
+#bluetooth.pairable       { color: @teal; }
+#bluetooth.off,
+#bluetooth.disabled       { color: @subtext; }
+#bluetooth.no-controller  { color: @red; }
+
+#battery                  { color: @text; }
+#battery.charging,
+#battery.plugged          { color: @teal; }
+#battery.warning          { color: @indigo; }
+#battery.critical         { color: @red; }
+#battery.critical:not(.charging) { animation: battery-pulse 1.5s ease-in-out infinite; }
+@keyframes battery-pulse {
+    0%   { background-color: rgba(65, 69, 89, 0.55); }
+    50%  { background-color: rgba(248, 113, 113, 0.30); }
+    100% { background-color: rgba(65, 69, 89, 0.55); }
+}
+
+#custom-now-playing {
+    color: @subtext;
+    padding: 0 10px;
+    margin: 4px 6px;
+    font-style: italic;
+    font-size: 12px;
+    background-color: transparent;
+    border-radius: 8px;
+}
+#custom-now-playing.playing { color: @text; }
+#custom-now-playing.paused  { color: @subtext; font-style: italic; }
+#custom-now-playing:hover   { color: @teal; background-color: rgba(94, 234, 212, 0.10); }
+
+#idle_inhibitor                 { color: @subtext; }
+#idle_inhibitor.activated       { color: @indigo; }
+#idle_inhibitor.activated:hover {
+    color: @indigo;
+    box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.4);
+}
+
+#custom-pomodoro              { font-size: 12px; padding: 0 14px; letter-spacing: 0.5px; }
+#custom-pomodoro.focus        { color: @red; }
+#custom-pomodoro.short_break  { color: @teal; }
+#custom-pomodoro.long_break   { color: @indigo; }
+#custom-pomodoro.paused       { color: @subtext; font-style: italic; }
+
+#custom-htb.down    { color: @red; }
+#custom-htb.up      { color: @subtext; }
+#custom-htb.target  { color: @teal; }
+#custom-htb.user    { color: @indigo; }
+#custom-htb.root    {
+    color: @teal;
+    font-weight: bold;
+    box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.45);
+}
+
+#custom-gamemode.off { color: @subtext; font-size: 14px; }
+#custom-gamemode.on  {
+    color: @base;
+    background-color: @red;
+    font-size: 14px;
+    box-shadow: 0 0 14px rgba(248, 113, 113, 0.55);
+}
+#custom-gamemode.on:hover {
+    background-color: @red;
+    color: @base;
+    box-shadow: 0 0 18px rgba(248, 113, 113, 0.75);
+}
+
+tooltip {
+    background-color: rgba(41, 44, 60, 0.95);
+    border: 1px solid rgba(94, 234, 212, 0.25);
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+tooltip label {
+    color: @text;
+    font-family: "JetBrainsMono Nerd Font Mono";
+    font-size: 11px;
+}

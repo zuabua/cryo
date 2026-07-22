@@ -1,0 +1,134 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 38,
+    "spacing": 4,
+    "margin-top": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+
+    "modules-left":   ["hyprland/workspaces", "custom/now-playing"],
+    "modules-center": ["clock"],
+    "modules-right":  ["custom/pomodoro", "custom/htb", "custom/b2", "idle_inhibitor", "custom/gamemode", "pulseaudio", "bluetooth", "network", "battery", "cpu", "memory", "tray"],
+
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "active":  "●",
+            "default": "○",
+            "urgent":  "◆"
+        },
+        "on-click": "activate",
+        "on-scroll-up":   "hyprctl dispatch workspace e+1",
+        "on-scroll-down": "hyprctl dispatch workspace e-1"
+    },
+
+    "clock": {
+        "format": "{:%a %d %b   %H:%M}",
+        "format-alt": "{:%A, %d %B %Y}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    "pulseaudio": {
+        "format": "\uf028  {volume}%",
+        "format-muted": "\uf026  muted",
+        "format-icons": { "default": ["\uf026", "\uf027", "\uf028"] },
+        "on-click": "pavucontrol",
+        "on-scroll-up":   "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+    },
+
+    "bluetooth": {
+        "format":            "\uf293",
+        "format-disabled":   "\uf293  off",
+        "format-off":        "\uf293  off",
+        "format-on":         "\uf293",
+        "format-connected":  "\uf293  {device_alias}",
+        "tooltip-format":             "{controller_alias}\t{controller_address}",
+        "tooltip-format-connected":   "{controller_alias}\t{controller_address}\n\n{device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+        "on-click":          "blueman-manager"
+    },
+
+    "network": {
+        "format-wifi": "\uf1eb  {essid}",
+        "format-ethernet": "\uf6ff  wired",
+        "format-disconnected": "\uf05e  offline",
+        "tooltip-format": "{ifname}\n{ipaddr}\n↑ {bandwidthUpBytes} ↓ {bandwidthDownBytes}",
+        "interval": 5
+    },
+
+    "battery": {
+        "states": { "warning": 25, "critical": 10 },
+        "format":          "{icon}  {capacity}%",
+        "format-charging": "\uf0e7  {capacity}%",
+        "format-plugged":  "\uf1e6  {capacity}%",
+        "format-icons":    ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
+        "tooltip-format":  "{timeTo}\n{power}W"
+    },
+
+    "cpu": {
+        "format": "\uf4bc  {usage}%",
+        "interval": 2,
+        "tooltip-format": "CPU {usage}%"
+    },
+
+    "memory": {
+        "format": "\uf538  {percentage}%",
+        "interval": 5,
+        "tooltip-format": "Memory {used:0.1f}G / {total:0.1f}G"
+    },
+
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": { "activated": "\uf0f4", "deactivated": "\uf186" },
+        "tooltip-format-activated":   "Caffeine ON — display will not sleep",
+        "tooltip-format-deactivated": "Caffeine OFF"
+    },
+
+    "tray": { "spacing": 8 },
+
+    "custom/b2": {
+        "format": "\uf0c2",
+        "tooltip": true,
+        "tooltip-format": "B2 drop zone",
+        "on-click": "~/.config/waybar/b2-toggle.sh"
+    },
+
+    "custom/htb": {
+        "exec": "~/.config/waybar/htb-status.sh",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "~/.config/waybar/htb-toggle.sh",
+        "on-click-right": "~/.config/quickshell/htb-vpn-toggle.sh",
+        "tooltip": true
+    },
+
+    "custom/now-playing": {
+        "exec": "~/.config/waybar/now-playing-daemon.sh",
+        "return-type": "json",
+        "tooltip": true,
+        "escape": false,
+        "on-click":       "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "on-scroll-up":   "playerctl previous",
+        "on-scroll-down": "playerctl next"
+    },
+
+    "custom/pomodoro": {
+        "exec": "~/.config/waybar/pomodoro-status.sh",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.local/bin/pomodoro toggle",
+        "on-click-right": "~/.local/bin/pomodoro reset",
+        "tooltip": true
+    },
+
+    "custom/gamemode": {
+        "exec": "~/.config/waybar/gamemode-status.sh",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/hypr/gamemode.sh"
+    }
+}
