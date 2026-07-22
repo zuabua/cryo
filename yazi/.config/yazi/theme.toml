@@ -1,0 +1,40 @@
+[mgr]
+cwd = { fg = "#5eead4" }
+directory = { fg = "#5eead4" }
+hovered = { fg = "#303446", bg = "#5eead4" }
+preview_hovered = { underline = true }
+find_keyword = { fg = "#818cf8", bold = true }
+find_position = { fg = "#a5adce" }
+marker_selected = { fg = "#5eead4", bg = "#5eead4" }
+marker_copied = { fg = "#818cf8", bg = "#818cf8" }
+marker_cut = { fg = "#f87171", bg = "#f87171" }
+tab_active = { fg = "#303446", bg = "#5eead4" }
+tab_inactive = { fg = "#a5adce", bg = "#414559" }
+border_symbol = "│"
+border_style = { fg = "#414559" }
+
+[status]
+separator_open  = ""
+separator_close = ""
+mode_normal = { fg = "#303446", bg = "#5eead4", bold = true }
+mode_select = { fg = "#303446", bg = "#818cf8", bold = true }
+mode_unset  = { fg = "#303446", bg = "#f87171", bold = true }
+progress_label  = { fg = "#c6d0f5" }
+progress_normal = { fg = "#5eead4" }
+progress_error  = { fg = "#f87171" }
+
+[input]
+border   = { fg = "#5eead4" }
+value    = { fg = "#c6d0f5" }
+
+[select]
+border   = { fg = "#5eead4" }
+active   = { fg = "#818cf8" }
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#818cf8" },
+  { mime = "video/*", fg = "#818cf8" },
+  { mime = "application/*", fg = "#f87171" },
+  { url = "*.md", fg = "#5eead4" },
+]
