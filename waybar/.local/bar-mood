@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -e -u
+
+ENABLE_FLAG="$HOME/.config/cryo/bar-mood.enabled"
+DAEMON="$HOME/.config/waybar/bar-mood-daemon.sh"
+ACCENT_FILE="$HOME/.config/waybar/accent.css.live"
+
+mkdir -p "$(dirname "$ENABLE_FLAG")"
+mkdir -p "$(dirname "$ACCENT_FILE")"
+
+is_running() { pgrep -f 'bar-mood-daemon\.sh' >/dev/null 2>&1; }
+reload_waybar() { pkill -SIGUSR2 -x waybar 2>/dev/null || true; }
+
+write_canonical() {
+  # moves the real file aside before stowing).
+  [ -L "$ACCENT_FILE" ] && rm -f "$ACCENT_FILE"
+  cat >"$ACCENT_FILE" <<'EOF'
+/* Cryo — accent.css.live (canonical, bar mood disabled) */
+@define-color teal   #5eead4;
+@define-color indigo #818cf8;
+EOF
+}
+
+cmd_on() {
+  touch "$ENABLE_FLAG"
+  if ! is_running; then
+    nohup "$DAEMON" >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+  fi
+  echo "bar mood: ON"
+}
+
+cmd_off() {
+  rm -f "$ENABLE_FLAG"
+  if is_running; then
+    pkill -f 'bar-mood-daemon\.sh' || true
+  fi
+  write_canonical
+  reload_waybar
+  echo "bar mood: OFF (colours restored)"
+}
+
+cmd_status() {
+  if [ -f "$ENABLE_FLAG" ]; then
+    if is_running; then
+      echo "bar mood: ON (daemon running)"
+    else echo "bar mood: ON (enabled but daemon not running — log out/in or run 'bar-mood on')"; fi
+  else
+    echo "bar mood: OFF"
+  fi
+}
+
+case "${1:-status}" in
+on | enable) cmd_on ;;
+off | disable) cmd_off ;;
+toggle)
+  if [ -f "$ENABLE_FLAG" ]; then cmd_off; else cmd_on; fi
+  ;;
+status | "") cmd_status ;;
+-h | --help | help)
+  cat <<'EOF'
+bar-mood — toggle Cryo's time-of-day accent shifting
+
+  bar-mood on        enable + start the daemon now (persists across sessions)
+  bar-mood off       disable + stop the daemon + restore canonical colours
+  bar-mood toggle    flip
+  bar-mood status    show current state (default if no argument)
+EOF
+  ;;
+*)
+  echo "unknown command: $1 (try --help)" >&2
+  exit 2
+  ;;
+esac

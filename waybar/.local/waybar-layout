@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+# Cryo waybar layout CLI
+# Manages a tiny layout file located in ~/.config/cryo/waybar-layout.json
+# and regenerates a config-live.jsonc from the stowed skeleton config + the users chosen module order.
+#
+# Commands:
+#   waybar-layout list                       JSON: {available, left, center, right}
+#   waybar-layout set <zone> <csv-of-mods>   set a zone's module order
+#   waybar-layout apply                      regen live config + reload waybar
+#   waybar-layout reset                      clear layout file -> back to defaults
+
+set -e -u
+
+SKELETON="$HOME/.config/waybar/config.jsonc"
+LIVE="$HOME/.config/waybar/config-live.jsonc"
+LAYOUT_DIR="$HOME/.config/cryo"
+LAYOUT="$LAYOUT_DIR/waybar-layout.json"
+
+mkdir -p "$LAYOUT_DIR"
+mkdir -p "$(dirname "$LIVE")"
+
+strip_jsonc() {
+  sed -E 's:^[[:space:]]*//.*$::'
+}
+
+skeleton_json() {
+  [ -f "$SKELETON" ] || {
+    echo "skeleton missing: $SKELETON" >&2
+    exit 1
+  }
+  strip_jsonc <"$SKELETON"
+}
+
+catalog() {
+  skeleton_json | jq -r '
+        keys[]
+        | select(
+            . != "layer" and . != "position" and . != "height" and
+            . != "spacing" and . != "margin-top" and . != "margin-left" and
+            . != "margin-right" and . != "modules-left" and
+            . != "modules-center" and . != "modules-right"
+          )
+    '
+}
+
+current_zone() {
+  local zone="$1"
+  if [ -f "$LAYOUT" ] && jq -e --arg z "$zone" 'has($z)' "$LAYOUT" >/dev/null 2>&1; then
+    jq -r --arg z "$zone" '.[$z][]' "$LAYOUT"
+  else
+    skeleton_json | jq -r --arg z "$zone" '.[$z][]?'
+  fi
+}
+
+case "${1:-list}" in
+list)
+  printf '{"available":'
+  catalog | jq -R . | jq -s .
+  printf ',"left":'
+  current_zone "modules-left" | jq -R . | jq -s .
+  printf ',"center":'
+  current_zone "modules-center" | jq -R . | jq -s .
+  printf ',"right":'
+  current_zone "modules-right" | jq -R . | jq -s .
+  printf '}\n'
+  ;;
+
+set)
+  zone_short="${2:?set <left|center|right> <a,b,c>}"
+  csv="${3:-}"
+  case "$zone_short" in
+  left | modules-left) zone="modules-left" ;;
+  center | modules-center) zone="modules-center" ;;
+  right | modules-right) zone="modules-right" ;;
+  *)
+    echo "zone must be left|center|right" >&2
+    exit 2
+    ;;
+  esac
+  arr=$(printf '%s' "$csv" | jq -R 'split(",") | map(select(length>0))')
+  # Load existing layout (or empty object), set the zone, write back
+  if [ -f "$LAYOUT" ]; then
+    existing=$(cat "$LAYOUT")
+  else
+    existing='{}'
+  fi
+  tmp=$(mktemp -p "$LAYOUT_DIR" .layout.XXXX)
+  printf '%s' "$existing" | jq --argjson arr "$arr" --arg z "$zone" '.[$z] = $arr' >"$tmp"
+  mv "$tmp" "$LAYOUT"
+  echo "set $zone: $(printf '%s' "$csv" | tr ',' ' ')"
+  ;;
+
+apply)
+  if [ ! -f "$SKELETON" ]; then
+    echo "skeleton missing: $SKELETON" >&2
+    exit 1
+  fi
+  tmp=$(mktemp -p "$(dirname "$LIVE")" .config-live.XXXX)
+  if [ -f "$LAYOUT" ]; then
+    skeleton_json | jq -s --slurpfile l "$LAYOUT" '.[0] * $l[0]' >"$tmp"
+  else
+    skeleton_json | jq . >"$tmp"
+  fi
+  if [ ! -s "$tmp" ]; then
+    rm -f "$tmp"
+    echo "apply produced empty output — refusing to overwrite $LIVE" >&2
+    exit 1
+  fi
+  mv "$tmp" "$LIVE"
+  # Reload waybar — SIGUSR2 = reload styles + config
+  pkill -SIGUSR2 -x waybar 2>/dev/null || true
+  echo "applied: $LIVE"
+  ;;
+
+reset)
+  rm -f "$LAYOUT"
+  # Regenerate from skeleton defaults
+  "$0" apply
+  ;;
+
+--help | -h | help)
+  cat <<'EOF'
+waybar-layout — Cryo Waybar layout controller
+
+  waybar-layout list                      JSON catalog + current layout
+  waybar-layout set <zone> <a,b,c,...>    zone = left | center | right
+  waybar-layout apply                     regen ~/.config/waybar/config-live.jsonc + reload waybar
+  waybar-layout reset                     drop personal layout, fall back to defaults
+EOF
+  ;;
+
+*)
+  echo "unknown command: $1 (try --help)" >&2
+  exit 2
+  ;;
+esac
