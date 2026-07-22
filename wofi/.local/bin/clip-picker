@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -e -u
+export PATH="$HOME/.local/bin:$PATH"
+
+case "${1:-pick}" in
+pick)
+  selection=$(cliphist list | wofi --dmenu --no-show-icons --prompt "clip" || true)
+  [ -z "$selection" ] && exit 0
+  printf '%s' "$selection" | cliphist decode | wl-copy
+  ;;
+clear)
+  choice=$(printf 'no\nyes — wipe clipboard history' | wofi --dmenu --prompt "Clear clip history?" || true)
+  case "$choice" in
+  yes*)
+    cliphist wipe
+    notify-send -t 1500 "Void Glow" "Clipboard history cleared" 2>/dev/null || true
+    ;;
+  esac
+  ;;
+--help | -h | help)
+  cat <<'EOF'
+clip-picker — Void Glow clipboard history picker (wofi front-end to cliphist)
+
+  clip-picker          pick an entry, re-copy to clipboard (Super+Shift+V)
+  clip-picker clear    wipe the cliphist db (asks first)
+EOF
+  ;;
+*)
+  echo "unknown subcommand: $1 (try --help)" >&2
+  exit 2
+  ;;
+esac
