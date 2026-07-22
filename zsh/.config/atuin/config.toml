@@ -1,0 +1,12 @@
+search_mode = "fuzzy"
+
+style = "compact"
+inline_height = 25
+
+enter_accept = true
+
+show_help = true
+show_preview = true
+
+filter_mode = "global"
+filter_mode_shell_up_key_binding = "session"
