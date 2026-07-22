@@ -14,13 +14,13 @@ clear)
   case "$choice" in
   yes*)
     cliphist wipe
-    notify-send -t 1500 "Void Glow" "Clipboard history cleared" 2>/dev/null || true
+    notify-send -t 1500 "Cryo" "Clipboard history cleared" 2>/dev/null || true
     ;;
   esac
   ;;
 --help | -h | help)
   cat <<'EOF'
-clip-picker — Void Glow clipboard history picker (wofi front-end to cliphist)
+clip-picker — Cryo clipboard history picker (wofi front-end to cliphist)
 
   clip-picker          pick an entry, re-copy to clipboard (Super+Shift+V)
   clip-picker clear    wipe the cliphist db (asks first)

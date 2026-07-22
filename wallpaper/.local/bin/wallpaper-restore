@@ -3,7 +3,7 @@
 set -u
 export PATH="$HOME/.local/bin:$PATH"
 
-DEFAULT="$HOME/Pictures/wallpapers/dark/voidglow-default.jpg"
+DEFAULT="$HOME/Pictures/wallpapers/dark/cryo-default.jpg"
 STATE="$HOME/.config/waypaper/state.ini"
 
 sleep 0.4

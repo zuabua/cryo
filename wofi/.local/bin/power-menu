@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Void Glow — Hyprland power menu (wofi front-end).
+# Cryo — Hyprland power menu (wofi front-end).
 # Bound to Super+Shift+M (richer cousin of Super+M which raw-exits).
 
 set -e -u
 
 CHOICE=$(printf '%s\n' \
-    "lock" \
-    "suspend" \
-    "logout (exit Hyprland)" \
-    "reboot" \
-    "shutdown" \
-    | wofi --dmenu --no-show-icons --prompt="power" || true)
+  "lock" \
+  "suspend" \
+  "logout (exit Hyprland)" \
+  "reboot" \
+  "shutdown" |
+  wofi --dmenu --no-show-icons --prompt="power" || true)
 [ -z "$CHOICE" ] && exit 0
 
 case "$CHOICE" in
-    lock)       hyprlock ;;
-    suspend)    systemctl suspend ;;
-    logout*)    hyprctl dispatch exit ;;
-    reboot)     systemctl reboot ;;
-    shutdown)   systemctl poweroff ;;
+lock) hyprlock ;;
+suspend) systemctl suspend ;;
+logout*) hyprctl dispatch exit ;;
+reboot) systemctl reboot ;;
+shutdown) systemctl poweroff ;;
 esac

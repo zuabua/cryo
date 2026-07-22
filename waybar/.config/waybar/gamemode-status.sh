@@ -3,7 +3,7 @@
 
 set -u
 
-STATE="$HOME/.cache/voidglow-gamemode"
+STATE="$HOME/.cache/cryo-gamemode"
 
 val="0"
 if [ -f "$STATE" ]; then
