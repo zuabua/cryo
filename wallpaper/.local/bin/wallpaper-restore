@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -u
+export PATH="$HOME/.local/bin:$PATH"
+
+DEFAULT="$HOME/Pictures/wallpapers/dark/voidglow-default.jpg"
+STATE="$HOME/.config/waypaper/state.ini"
+
+sleep 0.4
+
+if [ -s "$STATE" ] && command -v waypaper >/dev/null 2>&1; then
+  if waypaper --restore 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+# Fallback: bundled default direct to awww.
+if [ -f "$DEFAULT" ] && command -v awww >/dev/null 2>&1; then
+  awww img "$DEFAULT" 2>/dev/null || true
+fi
