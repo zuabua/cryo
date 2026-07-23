@@ -1,4 +1,4 @@
-** This repo is still in progress, as i am still porting over components, tools and stylings from other themes i experimented with **
+**This repo is still in progress, as i am still porting over components, tools and stylings from other themes i experimented with**
 
 # Cryo
 
