@@ -1,0 +1,392 @@
+#!/usr/bin/env bash
+# Cryo HTB active-target CLI
+#
+# This bin reads and writes a small JSON document and a sidecar markdown notes file
+# under ~/.local/share/cryo-htb/. The Quickshell drawer and the
+# waybar pill read the same files. This CLI is the writer so
+# the drawers form and the terminal uses the same code path.
+#
+# JSON schema includes name, ip, os, status, creds: [user, secret, source], ports [port, service, version]
+# owned_user, owned_root, created, and updated
+#
+# Sensitive data (creds and hashes) stay under ~/.local/shrae/cryo-htb
+# with 700 perms
+set -e -u
+
+DATA_DIR="$HOME/.local/share/cryo-htb"
+JSON="$DATA_DIR/active-target.json"
+NOTES="$DATA_DIR/active-notes.md"
+WRITEUPS="$DATA_DIR/writeups"
+
+mkdir -p "$DATA_DIR" "$WRITEUPS"
+chmod 700 "$DATA_DIR"
+
+EMPTY='{"name":"","ip":"","os":"","status":"","creds":[],"ports":[],"owned_user":false,"owned_root":false,"created":"","updated":""}'
+[ -f "$JSON" ] || echo "$EMPTY" >"$JSON"
+[ -f "$NOTES" ] || : >"$NOTES"
+
+now() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
+
+# Atomic write: jq filter on $JSON -> tmp -> mv into place.
+# This keeps the drawer's FileView from reading half-written JSON.
+jq_update() {
+  local tmp
+  tmp=$(mktemp -p "$DATA_DIR" .active.XXXX)
+  if jq "$@" "$JSON" >"$tmp"; then
+    mv "$tmp" "$JSON"
+  else
+    rm -f "$tmp"
+    echo "jq failed; JSON unchanged" >&2
+    return 1
+  fi
+}
+
+usage() {
+  cat <<'EOF'
+htb-target — Cryo HTB active-target CLI
+
+  set <name> <ip> [os]              start a new target (clears notes)
+  status <enum|foothold|priv|user|root>
+                                    update workflow stage
+  cred add <user>:<secret> [source]
+  cred del <index>
+  port add <port>/<svc> [version]
+  port del <port>
+  owned user|root [on|off]          flip owned flag (default on)
+  note [text]                       append a line; no args -> $EDITOR
+  ip                                print tun0 IP (for tmux pasting)
+  lab                               print active lab name
+  lab list                          list all imported VPN connections (NM)
+  lab tags                          print tag map (JSON)
+  lab set <path>                    import .ovpn into NM + pin as active
+  lab use <name>                    pin an already-imported NM VPN as active
+  lab switch <name>                 disconnect current + connect <name> + pin
+  lab tag <name> <env>              tag a VPN with an environment label
+  lab untag <name>                  remove tag
+  lab remove <name>                 disconnect + delete from NM + untag
+  show                              dump current JSON + notes
+  archive                           flush to writeups/<name>-<date>.md, reset
+  reset                             clear active target
+
+JSON:  ~/.local/share/cryo-htb/active-target.json
+Notes: ~/.local/share/cryo-htb/active-notes.md
+EOF
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+set)
+  name="${1:?usage: htb-target set <name> <ip> [os]}"
+  ip="${2:?usage: htb-target set <name> <ip> [os]}"
+  os="${3:-}"
+  echo "$EMPTY" >"$JSON"
+  jq_update --arg n "$name" --arg i "$ip" --arg o "$os" --arg t "$(now)" \
+    '.name=$n | .ip=$i | .os=$o | .status="enum" | .created=$t | .updated=$t'
+  # Seed notes with the workflow template so each box starts with the
+  # same section headings. Drop ~/.config/htb/notes-template.md to
+  # override with your own structure.
+  if [ -f "$HOME/.config/htb/notes-template.md" ]; then
+    cp "$HOME/.config/htb/notes-template.md" "$NOTES"
+  else
+    cat >"$NOTES" <<'TEMPLATE'
+## Recon
+
+## Foothold
+
+## Privesc
+
+## Loot
+TEMPLATE
+  fi
+  echo "set: $name ($ip)"
+  ;;
+
+status)
+  s="${1:?status: enum|foothold|priv|user|root}"
+  case "$s" in enum | foothold | priv | user | root) ;;
+  *)
+    echo "status must be one of: enum foothold priv user root" >&2
+    exit 2
+    ;;
+  esac
+  jq_update --arg s "$s" --arg t "$(now)" '.status=$s | .updated=$t'
+  # Convenience: status=user/root also flips owned flag
+  case "$s" in
+  user) jq_update --arg t "$(now)" '.owned_user=true | .updated=$t' ;;
+  root) jq_update --arg t "$(now)" '.owned_user=true | .owned_root=true | .updated=$t' ;;
+  esac
+  echo "status: $s"
+  ;;
+
+cred)
+  sub="${1:?cred add|del}"
+  shift
+  case "$sub" in
+  add)
+    pair="${1:?cred add <user>:<secret> [source]}"
+    src="${2:-}"
+    user="${pair%%:*}"
+    secret="${pair#*:}"
+    jq_update --arg u "$user" --arg s "$secret" --arg src "$src" --arg t "$(now)" \
+      '.creds += [{user:$u, secret:$s, source:$src}] | .updated=$t'
+    echo "cred added: $user"
+    ;;
+  del)
+    idx="${1:?cred del <index>}"
+    jq_update --argjson i "$idx" --arg t "$(now)" \
+      'del(.creds[$i]) | .updated=$t'
+    echo "cred del: $idx"
+    ;;
+  *)
+    echo "cred add|del" >&2
+    exit 2
+    ;;
+  esac
+  ;;
+
+port)
+  sub="${1:?port add|del}"
+  shift
+  case "$sub" in
+  add)
+    spec="${1:?port add <port>/<svc> [version]}"
+    ver="${2:-}"
+    port="${spec%%/*}"
+    svc="${spec#*/}"
+    jq_update --argjson p "$port" --arg s "$svc" --arg v "$ver" --arg t "$(now)" \
+      '.ports += [{port:$p, service:$s, version:$v}] | .updated=$t'
+    echo "port added: $port/$svc"
+    ;;
+  del)
+    port="${1:?port del <port>}"
+    jq_update --argjson p "$port" --arg t "$(now)" \
+      '.ports |= map(select(.port != $p)) | .updated=$t'
+    echo "port del: $port"
+    ;;
+  *)
+    echo "port add|del" >&2
+    exit 2
+    ;;
+  esac
+  ;;
+
+owned)
+  which="${1:?owned user|root [on|off]}"
+  val="${2:-on}"
+  b=true
+  [ "$val" = "off" ] && b=false
+  case "$which" in
+  user) jq_update --argjson b "$b" --arg t "$(now)" '.owned_user=$b | .updated=$t' ;;
+  root) jq_update --argjson b "$b" --arg t "$(now)" '.owned_root=$b | .updated=$t' ;;
+  *)
+    echo "owned user|root" >&2
+    exit 2
+    ;;
+  esac
+  echo "owned $which: $val"
+  ;;
+
+note)
+  if [ $# -gt 0 ]; then
+    printf '%s\n' "$*" >>"$NOTES"
+    jq_update --arg t "$(now)" '.updated=$t'
+  else
+    "${EDITOR:-nvim}" "$NOTES"
+    jq_update --arg t "$(now)" '.updated=$t'
+  fi
+  ;;
+
+ip)
+  ip -4 -o addr show tun0 2>/dev/null |
+    awk '{split($4,a,"/"); print a[1]; exit}' |
+    grep . || {
+    echo "no tun0 — VPN down?" >&2
+    exit 1
+  }
+  ;;
+
+lab)
+  # Multi-VPN management. `set` imports + pins. `use` pins an
+  # already-imported one. `switch` disconnects whatever's active
+  # and brings the chosen one up. `tag/untag/remove` manage the
+  # per-VPN environment label in ~/.config/htb/vpn-tags.json,
+  # which the drawer renders as the pill prefix.
+  sub="${1:-}"
+  shift || true
+  active_file="$HOME/.config/htb/active-lab"
+  tags_file="$HOME/.config/htb/vpn-tags.json"
+  mkdir -p "$HOME/.config/htb"
+  [ -f "$tags_file" ] || echo '{}' >"$tags_file"
+
+  # Atomic JSON edit for the tags file. Mirrors jq_update above but
+  # scoped to the tags sidecar (different path + initialisation).
+  tags_edit() {
+    local tmp
+    tmp=$(mktemp -p "$HOME/.config/htb" .tags.XXXX)
+    if jq "$@" "$tags_file" >"$tmp"; then
+      mv "$tmp" "$tags_file"
+    else
+      rm -f "$tmp"
+      echo "jq failed; tags unchanged" >&2
+      return 1
+    fi
+  }
+
+  case "$sub" in
+  "")
+    [ -s "$active_file" ] && cat "$active_file" || echo "(none)"
+    ;;
+  list)
+    nmcli -t -f NAME,TYPE connection show 2>/dev/null |
+      awk -F: '$2=="vpn"{print $1}'
+    ;;
+  tags)
+    cat "$tags_file"
+    ;;
+  set)
+    path="${1:?usage: htb-target lab set <path-to-ovpn>}"
+    [ -f "$path" ] || {
+      echo "no such file: $path" >&2
+      exit 1
+    }
+    name="$(basename "$path" .ovpn)"
+    if ! nmcli -t -f NAME connection show 2>/dev/null |
+      grep -qE "^${name}\$"; then
+      nmcli connection import type openvpn file "$path" ||
+        {
+          echo "nmcli import failed" >&2
+          exit 1
+        }
+    fi
+    echo "$name" >"$active_file"
+    echo "active lab: $name"
+    ;;
+  use)
+    name="${1:?usage: htb-target lab use <nm-connection-name>}"
+    if ! nmcli -t -f NAME connection show 2>/dev/null |
+      grep -qE "^${name}\$"; then
+      echo "no NM connection: $name" >&2
+      exit 1
+    fi
+    echo "$name" >"$active_file"
+    echo "active lab: $name"
+    ;;
+  switch)
+    name="${1:?usage: htb-target lab switch <nm-connection-name>}"
+    if ! nmcli -t -f NAME connection show 2>/dev/null |
+      grep -qE "^${name}\$"; then
+      echo "no NM connection: $name" >&2
+      exit 1
+    fi
+    # Drop whichever VPN is currently up — could be a sibling
+    # we want to replace, or even the same one (reconnect).
+    cur=$(nmcli -t -f NAME,TYPE,STATE connection show --active 2>/dev/null |
+      awk -F: '$2=="vpn" && $3=="activated"{print $1; exit}')
+    if [ -n "$cur" ]; then
+      nmcli con down "$cur" >/dev/null 2>&1 || true
+    fi
+    echo "$name" >"$active_file"
+    nmcli con up "$name" ||
+      {
+        echo "failed to bring up $name" >&2
+        exit 1
+      }
+    echo "switched to: $name"
+    ;;
+  tag)
+    name="${1:?usage: htb-target lab tag <name> <env>}"
+    env="${2:?usage: htb-target lab tag <name> <env>}"
+    tags_edit --arg n "$name" --arg e "$env" '. + {($n): $e}'
+    echo "tagged: $name -> $env"
+    ;;
+  untag)
+    name="${1:?usage: htb-target lab untag <name>}"
+    tags_edit --arg n "$name" 'del(.[$n])'
+    echo "untagged: $name"
+    ;;
+  remove)
+    name="${1:?usage: htb-target lab remove <name>}"
+    # If it's the currently-active connection, take it down first
+    # so NM can delete cleanly (otherwise NM refuses with EBUSY).
+    if nmcli -t -f NAME,STATE c show --active 2>/dev/null |
+      grep -qE "^${name}:activated\$"; then
+      nmcli con down "$name" >/dev/null 2>&1 || true
+    fi
+    nmcli connection delete "$name" >/dev/null 2>&1 ||
+      {
+        echo "failed to delete $name" >&2
+        exit 1
+      }
+    tags_edit --arg n "$name" 'del(.[$n])'
+    if [ -s "$active_file" ] && [ "$(cat "$active_file")" = "$name" ]; then
+      : >"$active_file"
+    fi
+    echo "removed: $name"
+    ;;
+  *)
+    echo "lab [|list|tags|set <path>|use <name>|switch <name>|tag <name> <env>|untag <name>|remove <name>]" >&2
+    exit 2
+    ;;
+  esac
+  ;;
+
+show)
+  jq . "$JSON"
+  if [ -s "$NOTES" ]; then
+    printf '\n--- notes ---\n'
+    cat "$NOTES"
+  fi
+  ;;
+
+archive)
+  name=$(jq -r '.name // ""' "$JSON")
+  if [ -z "$name" ] || [ "$name" = "null" ]; then
+    echo "no active target to archive" >&2
+    exit 1
+  fi
+  ts=$(date +%Y%m%d)
+  out="$WRITEUPS/${name}-${ts}.md"
+  {
+    echo "# $name"
+    echo
+    jq -r '"- IP: \(.ip)\n- OS: \(.os // "")\n- Status: \(.status)\n- User owned: \(.owned_user)\n- Root owned: \(.owned_root)"' "$JSON"
+    echo
+    if [ "$(jq '.ports | length' "$JSON")" -gt 0 ]; then
+      echo "## Ports"
+      jq -r '.ports[] | "- \(.port)/\(.service)\(if .version != "" then " — \(.version)" else "" end)"' "$JSON"
+      echo
+    fi
+    if [ "$(jq '.creds | length' "$JSON")" -gt 0 ]; then
+      echo "## Credentials"
+      jq -r '.creds[] | "- \(.user):\(.secret)\(if .source != "" then " (\(.source))" else "" end)"' "$JSON"
+      echo
+    fi
+    if [ -s "$NOTES" ]; then
+      echo "## Notes"
+      echo
+      cat "$NOTES"
+    fi
+  } >"$out"
+  echo "$EMPTY" >"$JSON"
+  : >"$NOTES"
+  echo "archived -> $out"
+  ;;
+
+reset)
+  echo "$EMPTY" >"$JSON"
+  : >"$NOTES"
+  echo "target cleared"
+  ;;
+
+"" | -h | --help | help)
+  usage
+  ;;
+
+*)
+  echo "unknown command: $cmd" >&2
+  usage >&2
+  exit 2
+  ;;
+esac
