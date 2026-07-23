@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Cryo — universal inbox
+# adds a one liner in inbox.md within my obsidian folder.
+# mainly for quick adding fleeting thoughts
+#
+# Usage:
+# inbox "test"          appends a line
+# inbox                 open the file in editor
+# inbox --tail [N]      print the last N (default is 20)
+
+set -e -u
+
+INBOX="$HOME/Documents/obsidian/inbox.md"
+mkdir -p "$(dirname "$INBOX")"
+touch "$INBOX"
+
+ensure_today_header() {
+  local today header
+  today="$(date +%Y-%m-%d)"
+  header="## $today"
+  if ! grep -Fxq "$header" "$INBOX"; then
+    {
+      # Leading blank line if file already has content
+      [ -s "$INBOX" ] && echo
+      echo "$header"
+      echo
+    } >>"$INBOX"
+  fi
+}
+
+case "${1:-}" in
+"")
+  # No args -> browse / edit
+  "${EDITOR:-nvim}" "$INBOX"
+  ;;
+--tail)
+  n="${2:-20}"
+  tail -n "$n" "$INBOX"
+  ;;
+--help | -h)
+  cat <<'EOF'
+inbox — Cryo capture log
+
+  inbox 'text'        append a timestamped line
+  inbox               open ~/Documents/obsidian/inbox.md in $EDITOR
+  inbox --tail [N]    show the last N entries (default 20)
+EOF
+  ;;
+*)
+  ensure_today_header
+  time_now="$(date +%H:%M)"
+  text="$*"
+  echo "- $time_now  $text" >>"$INBOX"
+  echo "captured: $text"
+  ;;
+esac
