@@ -7,5 +7,5 @@ import QtQuick
 import Quickshell
 
 ShellRoot {
-
+  HtbDrawer {}
 }
