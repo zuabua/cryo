@@ -208,7 +208,7 @@ pomodoro — Cryo Pomodoro CLI
   pomodoro pause / resume / stop / reset
   pomodoro status      dump raw key=value state
 
-Config:  ~/.config/voidglow/pomodoro.conf  (FOCUS_DURATION, SHORT_BREAK,
+Config:  ~/.config/cryo/pomodoro.conf  (FOCUS_DURATION, SHORT_BREAK,
          LONG_BREAK, CYCLES_BEFORE_LONG — all in seconds)
 EOF
   ;;
