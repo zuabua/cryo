@@ -118,6 +118,27 @@ EMPTY_TGT='{"name":"","ip":"","os":"","status":"","creds":[],"ports":[],"owned_u
   printf 'state=down lab= iface= myip= target= ping=—\n' >"$HOME/.cache/cryo-htb-vpn"
 info "HTB state files present at $HTB_DATA and ~/.cache/"
 
+# Gamemode
+[ -f "$HOME/.cache/cryo-gamemode" ] || echo 0 >"$HOME/.cache/cryo-gamemode"
+
+# Inbox drawer state + inbox.md
+mkdir -p "$HOME/Documents"
+[ -f "$HOME/.cache/cryo-inbox-shown" ] || echo 0 >"$HOME/.cache/cryo-inbox-shown"
+touch "$HOME/Documents/obsidian/inbox.md"
+info "Inbox state file present at ~/.cache/ and ~/Documents/obsidian/inbox.md"
+
+# Pomodoro
+[ -f "$HOME/.cache/cryo-pomodoro" ] || cat >"$HOME/.cache/cryo-pomodoro" <<EOF
+state=idle
+phase=
+started_at=
+duration=
+cycle=1
+paused_remaining=
+original_duration=
+EOF
+info "Pomodoro state file present at ~/.cache/cryo-pomodoro"
+
 # TODO: HTB VPN layout
 
 say "HTB OpenVPN lab import"

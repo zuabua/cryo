@@ -9,4 +9,5 @@ import Quickshell
 ShellRoot {
   HtbDrawer {}
   InboxDrawer {}
+  B2Drawer {}
 }
