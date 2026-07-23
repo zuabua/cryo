@@ -1,5 +1,9 @@
-*.credentials
+*.swp
+*.bak
+*~
+.DS_Store
 b2-credentials
+*.credentials
 credentials
-accent.css.live
-config-live.jsonc
+# for safety while testing
+*.ovpn
