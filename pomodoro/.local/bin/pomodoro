@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# Cryo pomodoro cli
+#
+# Usage:
+#   pomodoro toggle           idle -> focus  |  running -> paused  |  paused -> resume
+#   pomodoro start [focus|short_break|long_break]
+#   pomodoro pause / resume / stop / reset
+#   pomodoro status           dump raw key=value state (used by waybar status script)
+
+set -e -u
+
+STATE="$HOME/.cache/cryo-pomodoro"
+CONF="$HOME/.config/cryo/pomodoro.conf"
+
+# Defaults
+FOCUS_DURATION=1500  # 25 minutes
+SHORT_BREAK=300      # 5 minutes
+LONG_BREAK=900       # 15 minutes
+CYCLES_BEFORE_LONG=4 # long break every 4 focus blocks
+
+[ -f "$CONF" ] && . "$CONF"
+
+mkdir -p "$(dirname "$STATE")"
+
+now() { date +%s; }
+
+read_state() {
+  state="idle"
+  phase=""
+  started_at=""
+  duration=""
+  cycle="1"
+  paused_remaining=""
+  original_duration=""
+  [ -f "$STATE" ] || return 0
+  while IFS='=' read -r k v; do
+    case "$k" in
+    state) state="$v" ;;
+    phase) phase="$v" ;;
+    started_at) started_at="$v" ;;
+    duration) duration="$v" ;;
+    cycle) cycle="$v" ;;
+    paused_remaining) paused_remaining="$v" ;;
+    original_duration) original_duration="$v" ;;
+    esac
+  done <"$STATE"
+}
+
+write_state() {
+  local tmp
+  tmp=$(mktemp -p "$(dirname "$STATE")" .pomodoro.XXXX)
+  {
+    echo "state=$state"
+    echo "phase=$phase"
+    echo "started_at=$started_at"
+    echo "duration=$duration"
+    echo "cycle=$cycle"
+    echo "paused_remaining=$paused_remaining"
+    echo "original_duration=$original_duration"
+  } >"$tmp"
+  mv "$tmp" "$STATE"
+}
+
+clear_state() {
+  state="idle"
+  phase=""
+  started_at=""
+  duration=""
+  cycle="1"
+  paused_remaining=""
+  original_duration=""
+  write_state
+}
+
+duration_for() {
+  case "$1" in
+  focus) echo "$FOCUS_DURATION" ;;
+  short_break) echo "$SHORT_BREAK" ;;
+  long_break) echo "$LONG_BREAK" ;;
+  esac
+}
+
+begin_phase() {
+  local new_phase="$1"
+  state="running"
+  phase="$new_phase"
+  started_at="$(now)"
+  duration="$(duration_for "$new_phase")"
+  original_duration="$duration" # preserves the bar's total across pause/resume
+  paused_remaining=""
+  write_state
+  case "$new_phase" in
+  focus)
+    dunstctl set-paused true 2>/dev/null || true
+    notify-send -u low -t 2500 "Pomodoro" "🍅 Focus block · $((duration / 60)) min · cycle $cycle" 2>/dev/null || true
+    ;;
+  short_break)
+    dunstctl set-paused false 2>/dev/null || true
+    notify-send -u low -t 2500 "Pomodoro" "☕ Short break · $((duration / 60)) min" 2>/dev/null || true
+    ;;
+  long_break)
+    dunstctl set-paused false 2>/dev/null || true
+    notify-send -u low -t 2500 "Pomodoro" "🌳 Long break · $((duration / 60)) min" 2>/dev/null || true
+    ;;
+  esac
+}
+
+advance_phase() {
+  case "$phase" in
+  focus)
+    if [ "$((cycle % CYCLES_BEFORE_LONG))" -eq 0 ]; then
+      begin_phase long_break
+    else
+      begin_phase short_break
+    fi
+    ;;
+  short_break | long_break)
+    cycle=$((cycle + 1))
+    dunstctl set-paused false 2>/dev/null || true
+    state="idle"
+    phase=""
+    started_at=""
+    duration=""
+    paused_remaining=""
+    write_state
+    notify-send -u normal -t 4000 "Pomodoro" "Break done — ready for the next focus block?" 2>/dev/null || true
+    ;;
+  esac
+}
+
+read_state
+cmd="${1:-toggle}"
+shift || true
+
+case "$cmd" in
+toggle)
+  case "$state" in
+  idle) begin_phase focus ;;
+  running)
+    local_now=$(now)
+    paused_remaining=$((started_at + duration - local_now))
+    state="paused"
+    started_at=""
+    write_state
+    notify-send -u low -t 1500 "Pomodoro" "⏸ Paused" 2>/dev/null || true
+    ;;
+  paused)
+    started_at=$(now)
+    duration="$paused_remaining"
+    paused_remaining=""
+    state="running"
+    write_state
+    notify-send -u low -t 1500 "Pomodoro" "▶ Resumed" 2>/dev/null || true
+    ;;
+  esac
+  ;;
+
+start)
+  which="${1:-focus}"
+  begin_phase "$which"
+  ;;
+
+pause)
+  [ "$state" = "running" ] || {
+    echo "not running" >&2
+    exit 1
+  }
+  local_now=$(now)
+  paused_remaining=$((started_at + duration - local_now))
+  state="paused"
+  started_at=""
+  duration=""
+  write_state
+  ;;
+
+resume)
+  [ "$state" = "paused" ] || {
+    echo "not paused" >&2
+    exit 1
+  }
+  started_at=$(now)
+  duration="$paused_remaining"
+  paused_remaining=""
+  state="running"
+  write_state
+  ;;
+
+stop | reset)
+  dunstctl set-paused false 2>/dev/null || true
+  clear_state
+  notify-send -u low -t 1500 "Pomodoro" "Reset" 2>/dev/null || true
+  ;;
+
+_advance_internal)
+  advance_phase
+  ;;
+
+status)
+  cat "$STATE" 2>/dev/null || echo "state=idle"
+  ;;
+
+--help | -h | help)
+  cat <<'EOF'
+pomodoro — Cryo Pomodoro CLI
+
+  pomodoro toggle      idle->focus | running->pause | paused->resume
+  pomodoro start [focus|short_break|long_break]
+  pomodoro pause / resume / stop / reset
+  pomodoro status      dump raw key=value state
+
+Config:  ~/.config/voidglow/pomodoro.conf  (FOCUS_DURATION, SHORT_BREAK,
+         LONG_BREAK, CYCLES_BEFORE_LONG — all in seconds)
+EOF
+  ;;
+
+*)
+  echo "unknown command: $cmd (try --help)" >&2
+  exit 2
+  ;;
+esac
