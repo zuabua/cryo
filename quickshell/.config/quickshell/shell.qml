@@ -8,4 +8,5 @@ import Quickshell
 
 ShellRoot {
   HtbDrawer {}
+  InboxDrawer {}
 }
