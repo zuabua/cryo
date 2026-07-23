@@ -13,9 +13,9 @@ if ip -4 addr show tun0 >/dev/null 2>&1; then
   LHOST=$(ip -4 addr show tun0 2>/dev/null |
     grep -oE 'inet [0-9.]+' | head -n1 | cut -d' ' -f2)
 fi
-if [ -z "$LHOST" ] && [ -f "$HOME/.cache/voidglow-htb-vpn" ]; then
+if [ -z "$LHOST" ] && [ -f "$HOME/.cache/cryo-htb-vpn" ]; then
   LHOST=$(awk '{for(i=1;i<=NF;i++) if($i ~ /^myip=/){sub(/^myip=/,"",$i); print $i}}' \
-    "$HOME/.cache/voidglow-htb-vpn")
+    "$HOME/.cache/cryo-htb-vpn")
 fi
 [ -z "$LHOST" ] && LHOST="<LHOST>"
 
