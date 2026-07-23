@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Cryo - emit htb list cache for the quickshell drawer
+#
+# Merges three sources
+# nmncli
+# ~/.config/htb/vpn-tags.json
+# ~/.config/htb/active-lab + nmcli -- active
+#
+# Output = ~/.cache/cryo-htb-vpns.json
+
+set -e -u
+
+CACHE="$HOME/.cache/cryo-htb-vpns.json"
+TAGS_FILE="$HOME/.config/htb/vpn-tags.json"
+ACTIVE_FILE="$HOME/.config/htb/active-lab"
+
+mkdir -p "$(dirname "$CACHE")"
+[ -f "$TAGS_FILE" ] || {
+  mkdir -p "$(dirname "$TAGS_FILE")"
+  echo '{}' >"$TAGS_FILE"
+}
+
+active=""
+[ -s "$ACTIVE_FILE" ] && active=$(cat "$ACTIVE_FILE")
+
+connected_json=$(nmcli -t -f NAME,TYPE,STATE connection show --active 2>/dev/null |
+  awk -F: '$2=="vpn" && $3=="activated"{print $1}' |
+  jq -R . | jq -s .)
+
+tmp=$(mktemp -p "$(dirname "$CACHE")" .vpns.XXXX)
+nmcli -t -f NAME,TYPE connection show 2>/dev/null |
+  awk -F: '$2=="vpn"{print $1}' |
+  jq -R . |
+  jq -s --arg active "$active" \
+    --argjson connected "$connected_json" \
+    --slurpfile tags "$TAGS_FILE" \
+    'map({
+            name:      .,
+            tag:       ($tags[0][.] // ""),
+            pinned:    (. == $active),
+            connected: ($connected | index(.) != null)
+        })' >"$tmp"
+mv "$tmp" "$CACHE"
