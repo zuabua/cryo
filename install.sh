@@ -127,6 +127,38 @@ mkdir -p "$HOME/Documents"
 touch "$HOME/Documents/obsidian/inbox.md"
 info "Inbox state file present at ~/.cache/ and ~/Documents/obsidian/inbox.md"
 
+# Waybar controller
+[ -f "$HOME/.cache/cryo-barctl-shown" ] || echo 0 >"$HOME/.cache/cryo-barctl-shown"
+
+# Bar mood
+mkdir -p "$HOME/.config/waybar"
+info "accent.css.live stowed; bar mood disabled by default — run \`bar-mood on\` to enable"
+
+# Waybar layout
+WAYBAR_LAYOUT="$HOME/.local/bin/waybar-layout"
+WAYBAR_LIVE="$HOME/.config/waybar/config-live.jsonc"
+WAYBAR_SKEL="$HOME/.config/waybar/config.jsonc"
+if [ -x "$WAYBAR_LAYOUT" ]; then
+  info "Regenerating $WAYBAR_LIVE"
+  if ! "$WAYBAR_LAYOUT" apply >/dev/null; then
+    warn "waybar-layout apply failed — see stderr above"
+  fi
+else
+  warn "$WAYBAR_LAYOUT not present after stow — skipping apply"
+fi
+
+# Verify Result
+if [ ! -s "$WAYBAR_LIVE" ]; then
+  warn "$WAYBAR_LIVE is missing or empty after apply"
+  if [ -f "$WAYBAR_SKEL" ]; then
+    note "Falling back to a verbatim copy of the skeleton."
+    cp "$WAYBAR_SKEL" "$WAYBAR_LIVE"
+  else
+    warn "Skeleton $WAYBAR_SKEL also missing — waybar will fail to start."
+    warn "Check that the 'waybar' stow package linked correctly."
+  fi
+fi
+
 # Pomodoro
 [ -f "$HOME/.cache/cryo-pomodoro" ] || cat >"$HOME/.cache/cryo-pomodoro" <<EOF
 state=idle
