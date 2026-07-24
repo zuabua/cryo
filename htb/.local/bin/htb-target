@@ -9,7 +9,7 @@
 # JSON schema includes name, ip, os, status, creds: [user, secret, source], ports [port, service, version]
 # owned_user, owned_root, created, and updated
 #
-# Sensitive data (creds and hashes) stay under ~/.local/shrae/cryo-htb
+# Sensitive data (creds and hashes) stay under ~/.local/share/cryo-htb
 # with 700 perms
 set -e -u
 

@@ -544,7 +544,7 @@ fi
 # Quickshell stuff
 
 say "HTB state files (pre-seed)"
-HTB_DATA= "$HOME/.local/share/cryo-htb"
+HTB_DATA="$HOME/.local/share/cryo-htb"
 mkdir -p "$HTB_DATA/writeups" "$HOME/.config/htb" "$HOME/.cache"
 chmod 700 "$HTB_DATA"
 
@@ -657,7 +657,7 @@ smoke_section() { printf "\n  ${C_TEAL}== %s ==${C_RESET}\n" "$1"; }
 # ── [SDDM] ────────────────────────────────────────────────────────────
 smoke_section "SDDM (login greeter)"
 
-SDDM_DST="/usr/share/sddm/themes/void-glow"
+SDDM_DST="/usr/share/sddm/themes/cryo"
 if [ -d "$SDDM_DST" ]; then
   smoke_ok "theme deployed at $SDDM_DST"
   for f in Main.qml metadata.desktop theme.conf background.png; do
@@ -671,8 +671,8 @@ else
   smoke_fail "theme directory $SDDM_DST missing — was step 7 skipped?"
 fi
 
-if [ -f /etc/sddm.conf.d/zz-void-glow.conf ]; then
-  smoke_ok "activation drop-in /etc/sddm.conf.d/zz-void-glow.conf present"
+if [ -f /etc/sddm.conf.d/zz-cryo.conf ]; then
+  smoke_ok "activation drop-in /etc/sddm.conf.d/zz-cryo.conf present"
 else
   smoke_fail "activation drop-in missing — greeter will use distro default"
 fi
@@ -685,10 +685,10 @@ SDDM_EFF=$(
     awk -F= '/^\[Theme\]/{f=1; next} /^\[/{f=0} f && /^Current=/{print $2}' "$f"
   done | tail -n 1
 )
-if [ "$SDDM_EFF" = "void-glow" ]; then
-  smoke_ok "effective SDDM theme resolves to 'void-glow'"
+if [ "$SDDM_EFF" = "cryo" ]; then
+  smoke_ok "effective SDDM theme resolves to 'cryo'"
 else
-  smoke_fail "effective SDDM theme is '$SDDM_EFF', not 'void-glow'"
+  smoke_fail "effective SDDM theme is '$SDDM_EFF', not 'cryo'"
 fi
 
 # ── [Waybar] ──────────────────────────────────────────────────────────
@@ -867,8 +867,8 @@ smoke_section "Services & cache"
 
 # Cache files seeded for every waybar custom module that reads one
 CACHE_MISS=()
-for f in voidglow-gamemode voidglow-pomodoro voidglow-htb-vpn \
-  voidglow-htb-shown voidglow-inbox-shown voidglow-barctl-shown; do
+for f in cryo-gamemode cryo-pomodoro cryo-htb-vpn \
+  cryo-htb-shown cryo-inbox-shown cryo-barctl-shown; do
   [ -f "$HOME/.cache/$f" ] || CACHE_MISS+=("$f")
 done
 if [ ${#CACHE_MISS[@]} -eq 0 ]; then
@@ -877,7 +877,7 @@ else
   smoke_fail "missing cache files: ${CACHE_MISS[*]}"
 fi
 
-if [ -f "$HOME/Pictures/wallpapers/dark/voidglow-default.jpg" ]; then
+if [ -f "$HOME/Pictures/wallpapers/dark/cryo-default.jpg" ]; then
   smoke_ok "bundled wallpaper present at ~/Pictures/wallpapers/dark/"
 else
   smoke_fail "bundled wallpaper missing — wallpaper-restore fallback will fail"
@@ -931,7 +931,7 @@ The repo is deployed. A few items still need your hands:
 
   ${C_TEAL}1. B2 credentials${C_RESET}
      mkdir -p ~/.config/b2
-     cp ~/void-glow/quickshell/.config/quickshell/b2-credentials.example \\
+     cp $REPO_DIR/quickshell/.config/quickshell/b2-credentials.example \\
         ~/.config/b2/credentials
      chmod 600 ~/.config/b2/credentials
      # Then edit and paste your real B2_KEY_ID + B2_APP_KEY.
@@ -952,7 +952,7 @@ The repo is deployed. A few items still need your hands:
 
   ${C_TEAL}5. Wallpapers${C_RESET}
      A palette-matched default is already installed at
-       ~/Pictures/wallpapers/dark/voidglow-default.jpg
+       ~/Pictures/wallpapers/dark/cryo-default.jpg
      Drop your own additions into:
        ~/Pictures/wallpapers/{dark,gaming,minimal}/
      Super+W opens the waypaper picker; whatever you pick survives

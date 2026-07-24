@@ -8,7 +8,6 @@ OUT="${SCRIPT_DIR}/background.png"
 PALETTE_CANDIDATES=(
   "${CRYO_PALETTE:-}"
   "${SCRIPT_DIR}/../../../theme/.config/theme/colors.sh"
-  "${HOME}/cryo/theme/.config/theme/colors.sh"
 )
 PALETTE=""
 for cand in "${PALETTE_CANDIDATES[@]}"; do
