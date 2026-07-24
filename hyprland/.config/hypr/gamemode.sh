@@ -8,7 +8,7 @@ if [ "$CURRENT" = "1" ]; then
   hyprctl --batch "\
     keyword animations:enabled 1 ;\
     keyword decoration:blur:enabled 1 ;\
-    keyword decoration:shadow:enabnled 1 ;\
+    keyword decoration:shadow:enabled 1 ;\
     keyword decoration:rounding 12 ;\
     keyword misc:vfr 1 ;\
     keyword misc:vrr 2" >/dev/null

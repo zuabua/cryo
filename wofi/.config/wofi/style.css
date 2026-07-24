@@ -23,7 +23,7 @@ window {
     border: 1px solid rgba(65, 69, 89, 0.6);
     border-radius: 10px;
     outline: none;
-    caret_color: #5eead4;
+    caret-color: #5eead4;
 }
 
 #input:focus {

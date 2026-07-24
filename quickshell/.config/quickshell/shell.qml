@@ -10,4 +10,6 @@ ShellRoot {
   HtbDrawer {}
   InboxDrawer {}
   B2Drawer {}
+  BarCtlDrawer {}
+  KeybindsDrawer {}
 }

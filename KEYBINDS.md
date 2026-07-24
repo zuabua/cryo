@@ -57,7 +57,7 @@ Pure reference. No prose. For the "why" and walkthroughs, see [README.md](README
 
 ---
 
-## Hyprland — widgets & tools (fancy-only)
+## Hyprland — widgets & tools
 
 | Bind | Action |
 |------|--------|
