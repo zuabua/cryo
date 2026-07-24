@@ -1,0 +1,15 @@
+[SddmGreeterTheme]
+Name=Cryo
+Description=Dark Cryo 
+Author=Zuabua
+License=MIT
+Type=sddm-theme
+Version=1.0
+Website=
+Screenshot=
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=
+Email=
+Theme-Id=cryo
+Theme-API=2.0
