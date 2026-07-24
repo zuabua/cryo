@@ -194,7 +194,7 @@ LazyVim defaults (full list: `:Telescope keymaps`): `<leader>ff` find file, `<le
 
 | Command | What it does |
 |---------|--------------|
-| `inbox '<text>'` | Append timestamped line to `~/Documents/inbox.md` |
+| `inbox '<text>'` | Append timestamped line to `~/Documents/obsidian/inbox.md` |
 | `inbox` | Open inbox in `$EDITOR` |
 | `inbox --tail 20` | Show last 20 entries |
 | `htb-target set <name> <ip>` | Pin HTB box; populates JSON + opens notes template |

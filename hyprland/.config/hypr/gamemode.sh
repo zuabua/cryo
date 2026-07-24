@@ -10,7 +10,7 @@ if [ "$CURRENT" = "1" ]; then
     keyword decoration:blur:enabled 1 ;\
     keyword decoration:shadow:enabled 1 ;\
     keyword decoration:rounding 12 ;\
-    keyword misc:vfr 1 ;\
+    keyword debug:vfr 1 ;\
     keyword misc:vrr 2" >/dev/null
   echo "0" >"$STATE"
   notify-send -t 1500 "Cryo" "Gamemode OFF" 2>/dev/null || true
@@ -20,7 +20,7 @@ else
     keyword decoration:blur:enabled 0 ;\
     keyword decoration:shadow:enabled 0 ;\
     keyword decoration:rounding 0 ;\
-    keyword misc:vfr 0 ;\
+    keyword debug:vfr 0 ;\
     keyword misc:vrr 1" >/dev/null
   echo "1" >"$STATE"
   notify-send -t 1500 "Cryo" "Gamemode ON" 2>/dev/null || true
