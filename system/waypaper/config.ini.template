@@ -1,3 +1,4 @@
+# Cryo waypaper defaults, seeds to ~/.config/waypaper/config.ini
 [Settings]
 language = en
 folder = ~/Pictures/wallpapers/dark
@@ -24,7 +25,7 @@ zen_mode = False
 mpvpaper_sound = False
 mpvpaper_options = 
 use_xdg_state = False
-stylesheet = /home/zua/.config/waypaper/style.css
+stylesheet = @HOME@/.config/waypaper/style.css
 keybindings = ~/.config/waypaper/keybindings.ini
 wallpaperengine_folder = ~/.steam/root/steamapps/workshop/content/431960
 linux_wallpaperengine_clamp = none

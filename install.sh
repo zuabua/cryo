@@ -388,6 +388,27 @@ else
   cp "$WP_SRC" "$WP_DST"
 fi
 
+WP_TEMPLATE="$REPO_DIR/system/waypaper/config.ini.template"
+WP_CONF="$HOME/.config/waypaper/config.ini"
+
+if [ ! -f "$WP_TEMPLATE" ]; then
+  warn "$WP_TEMPLATE missing — skipping waypaper config seed"
+  note "waypaper will fall back to its own defaults (wrong folder + backend)."
+else
+  mkdir -p "$(dirname "$WP_CONF")"
+  if [ -L "$WP_CONF" ]; then
+    info "Removing symlinked $WP_CONF (config is a seeded file now)"
+    rm -f "$WP_CONF"
+  fi
+  if [ -f "$WP_CONF" ]; then
+    info "waypaper config already present — leaving your settings alone"
+    note "Delete $WP_CONF and re-run to reseed from the repo defaults."
+  else
+    info "Seeding $WP_CONF for $USER"
+    sed "s|@HOME@|$HOME|g" "$WP_TEMPLATE" >"$WP_CONF"
+  fi
+fi
+
 if [ -f "$WP_DST" ] &&
   [ -n "${WAYLAND_DISPLAY:-}" ] &&
   command -v waypaper >/dev/null 2>&1; then
@@ -561,7 +582,7 @@ info "HTB state files present at $HTB_DATA and ~/.cache/"
 [ -f "$HOME/.cache/cryo-gamemode" ] || echo 0 >"$HOME/.cache/cryo-gamemode"
 
 # Inbox drawer state + inbox.md
-mkdir -p "$HOME/Documents"
+mkdir -p "$HOME/obsidian/Documents"
 [ -f "$HOME/.cache/cryo-inbox-shown" ] || echo 0 >"$HOME/.cache/cryo-inbox-shown"
 touch "$HOME/Documents/obsidian/inbox.md"
 info "Inbox state file present at ~/.cache/ and ~/Documents/obsidian/inbox.md"
@@ -610,7 +631,7 @@ original_duration=
 EOF
 info "Pomodoro state file present at ~/.cache/cryo-pomodoro"
 
-# TODO: HTB VPN layout
+# HTB VPN layout
 
 say "HTB OpenVPN lab import"
 
@@ -881,6 +902,25 @@ if [ -f "$HOME/Pictures/wallpapers/dark/cryo-default.jpg" ]; then
   smoke_ok "bundled wallpaper present at ~/Pictures/wallpapers/dark/"
 else
   smoke_fail "bundled wallpaper missing — wallpaper-restore fallback will fail"
+fi
+
+# waypaper config must be a real file (not a repo symlink) and must not carry
+# a home directory belonging to somebody else.
+SMOKE_WP_CONF="$HOME/.config/waypaper/config.ini"
+if [ -L "$SMOKE_WP_CONF" ]; then
+  smoke_fail "waypaper config.ini is a symlink — waypaper will write into the repo"
+elif [ ! -s "$SMOKE_WP_CONF" ]; then
+  smoke_fail "waypaper config.ini missing — picker falls back to waypaper defaults"
+else
+  FOREIGN_HOME=$(grep -oE '/home/[^/[:space:]]+' "$SMOKE_WP_CONF" |
+    sort -u | grep -vxF "$HOME" || true)
+  if [ -n "$FOREIGN_HOME" ]; then
+    smoke_fail "waypaper config.ini references another user's home: $FOREIGN_HOME"
+  elif grep -q '@HOME@' "$SMOKE_WP_CONF"; then
+    smoke_fail "waypaper config.ini still has an unsubstituted @HOME@ placeholder"
+  else
+    smoke_ok "waypaper config.ini seeded for $USER (no hardcoded paths)"
+  fi
 fi
 
 # bluetooth.service enabled (skip if bluez not installed)
